@@ -394,6 +394,8 @@ export default function ExperienceSection() {
   // One motion value drives every leaf, written straight to the DOM
   useEffect(() => {
     const source = reduced ? progress : smooth;
+    // Last written values per leaf; restyling an unchanged leaf still invalidates its subtree
+    const written = Array.from({ length: LEAVES }, () => "");
 
     const apply = (p: number) => {
       const u = p * TOTAL;
@@ -419,11 +421,17 @@ export default function ExperienceSection() {
 
         const leaf = leafRefs.current[k];
         if (!leaf) continue;
-        leaf.style.transform = `perspective(3200px) rotateY(${(-180 * e).toFixed(2)}deg)`;
-        leaf.style.zIndex = String(e > 0 && e < 1 ? Z_TURNING : e >= 1 ? k + 1 : LEAVES - k);
-        leaf.style.setProperty("--bend", bend.toFixed(3));
+        const rot = (-180 * e).toFixed(2);
+        const z = e > 0 && e < 1 ? Z_TURNING : e >= 1 ? k + 1 : LEAVES - k;
+        const bendS = bend.toFixed(3);
         // Coplanar leaves can ignore z-index in 3D, so hide any page that's buried in the stack
         const visible = (e > 0 && e < 1) || k === lastTurned || k === firstUnturned;
+        const key = `${rot}|${z}|${bendS}|${visible}`;
+        if (written[k] === key) continue;
+        written[k] = key;
+        leaf.style.transform = `perspective(3200px) rotateY(${rot}deg)`;
+        leaf.style.zIndex = String(z);
+        leaf.style.setProperty("--bend", bendS);
         leaf.style.visibility = visible ? "visible" : "hidden";
       }
 

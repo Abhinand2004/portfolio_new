@@ -541,7 +541,10 @@ export default function HeroDustPortrait({ src, alt, width, height, targetId = "
     };
 
     const onScroll = () => {
-      dissolve = readScroll();
+      const d = readScroll();
+      // Once fully dissolved (or fully formed) further scrolling changes nothing
+      if (d === dissolve) return;
+      dissolve = d;
       kick();
     };
 

@@ -203,9 +203,21 @@ function Cube({
 /* ── Scene ── */
 export default function SocialCubes() {
   const [isLight, setIsLight] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  // null until the media query is read, so phones don't mount a desktop canvas first
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
   const [reduced, setReduced] = useState(false);
   const [replay, setReplay] = useState(0);
+  const [onScreen, setOnScreen] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Stop rendering the WebGL scene once the hero is scrolled away
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([entry]) => setOnScreen(entry.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
     const onReplay = () => setReplay((r) => r + 1);
@@ -238,13 +250,15 @@ export default function SocialCubes() {
   }, []);
 
   return (
-    <div className="social-cubes-container">
+    <div ref={containerRef} className="social-cubes-container">
+      {isMobile !== null && (
       <Canvas
         key={isMobile ? "mobile" : "desktop"}
         flat
-        gl={{ antialias: true, alpha: true }}
+        frameloop={onScreen ? "always" : "never"}
+        gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}
         camera={{ position: [0, 0, isMobile ? 3.2 : 5], fov: 32 }}
-        dpr={[1, 2]}
+        dpr={[1, isMobile ? 1.5 : 2]}
       >
         <React.Suspense fallback={null}>
           {/* Top-front key so the lid reads brightest and the left side falls off; ~π total keeps true palette colour */}
@@ -257,6 +271,7 @@ export default function SocialCubes() {
           ))}
         </React.Suspense>
       </Canvas>
+      )}
     </div>
   );
 }

@@ -205,8 +205,23 @@ export default function AboutSection() {
 
       frame = requestAnimationFrame(loop);
     };
-    frame = requestAnimationFrame(loop);
-    return () => cancelAnimationFrame(frame);
+
+    // Only simulate while the card can actually be seen
+    const section = sectionRef.current;
+    if (!section) return;
+    const io = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        if (!frame) frame = requestAnimationFrame(loop);
+      } else if (frame) {
+        cancelAnimationFrame(frame);
+        frame = 0;
+      }
+    });
+    io.observe(section);
+    return () => {
+      io.disconnect();
+      cancelAnimationFrame(frame);
+    };
   }, [reduced]);
 
   useEffect(() => {
